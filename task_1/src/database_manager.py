@@ -30,16 +30,24 @@ class DatabaseManager:
         );
         """
 
+        #После анализа результатов EXPLAIN ANALYZE и просмотра количества сканов индексов
+        #стало очевидно, что idx_students_birthday и idx_students_sex никак не оптимизируют выполнение запросов
         create_index_query = """
         CREATE INDEX IF NOT EXISTS idx_students_room_id ON students(room_id);
-        CREATE INDEX IF NOT EXISTS idx_students_birthday ON students(birthday);
-        CREATE INDEX IF NOT EXISTS idx_students_sex ON students(sex);
+        --CREATE INDEX IF NOT EXISTS idx_students_birthday ON students(birthday);
+        --CREATE INDEX IF NOT EXISTS idx_students_sex ON students(sex);
         """
+        
+        # test_index_profit_query = """
+        # SET enable_seqscan = OFF;
+        # """
 
         try:
             self.cursor.execute(create_rooms_table)
             self.cursor.execute(create_students_table)
-            self.cursor.execute(create_index_query)  # Создание индекса
+            self.cursor.execute(create_index_query)
+            #self.cursor.execute(test_index_profit_query)
+
             self.conn.commit()
         except Exception as e:
             print(f"Ошибка при создании таблиц или индекса: {e}")
@@ -47,12 +55,10 @@ class DatabaseManager:
             
                
     def insert_room(self, room_data):
-        # SQL запрос для добавления комнаты с заданным ID
         insert_room_query = """
         INSERT INTO rooms (id, name) VALUES (%s, %s) ON CONFLICT (id) DO NOTHING;
         """
         try:
-            # Вставляем новую комнату
             self.cursor.execute(insert_room_query, (room_data['id'], room_data['name']))
             self.conn.commit()
             
@@ -62,18 +68,15 @@ class DatabaseManager:
 
 
     def insert_student(self, student_data):
-        # SQL запрос для добавления студента с заданным ID
         insert_student_query = """
         INSERT INTO students (id, name, sex, birthday, room_id)
         VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO NOTHING;
         """
         try:
-            # Получаем ID комнаты
             self.cursor.execute("SELECT id FROM rooms WHERE id = %s", (student_data['room'],))
             room = self.cursor.fetchone()
             
             if room:
-                # Вставляем нового студента
                 self.cursor.execute(
                     insert_student_query, 
                     (student_data['id'], student_data['name'], student_data['sex'], student_data['birthday'], student_data['room'])
@@ -95,10 +98,14 @@ class DatabaseManager:
         ORDER BY r.id;
         """
         try:
+            explain_query = f"EXPLAIN ANALYZE {query}"
+            self.cursor.execute(explain_query)
+            explain_results = self.cursor.fetchall()
+            self.print_explain_results(explain_results)
+            
             self.cursor.execute(query)
             results = self.cursor.fetchall()
             
-            # Преобразование результатов в список словарей
             rooms_with_counts = []
             for row in results:
                 room_data = {
@@ -124,10 +131,14 @@ class DatabaseManager:
         LIMIT %s;
         """
         try:
+            explain_query = f"EXPLAIN ANALYZE {query}"
+            self.cursor.execute(explain_query, (limit,))
+            explain_results = self.cursor.fetchall()
+            self.print_explain_results(explain_results)
+            
             self.cursor.execute(query, (limit,))
             results = self.cursor.fetchall()
             
-            # Преобразование результатов в список словарей
             rooms_with_average_age = []
             for row in results:
                 room_data = {
@@ -153,6 +164,11 @@ class DatabaseManager:
         LIMIT %s;
         """
         try:
+            explain_query = f"EXPLAIN ANALYZE {query}"
+            self.cursor.execute(explain_query, (limit,))
+            explain_results = self.cursor.fetchall()
+            self.print_explain_results(explain_results)
+            
             self.cursor.execute(query, (limit,))
             results = self.cursor.fetchall()
 
@@ -180,10 +196,14 @@ class DatabaseManager:
         HAVING COUNT(DISTINCT s.sex) > 1;
         """
         try:
+            explain_query = f"EXPLAIN ANALYZE {query}"
+            self.cursor.execute(explain_query)
+            explain_results = self.cursor.fetchall()
+            self.print_explain_results(explain_results)
+            
             self.cursor.execute(query)
             results = self.cursor.fetchall()
             
-            # Преобразование результатов в список словарей
             rooms_with_mixed_genders = []
             for row in results:
                 room_data = {
@@ -199,6 +219,11 @@ class DatabaseManager:
             return None
 
         
+    def print_explain_results(self, explain_results):
+        print("EXPLAIN ANALYZE результат:")
+        for row in explain_results:
+            print(row)
+    
     def close(self):
         if self.cursor:
             self.cursor.close()

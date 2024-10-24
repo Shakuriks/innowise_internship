@@ -29,12 +29,12 @@ class DataHandler:
             
         output_filepath = os.path.join(output_directory, output_filepath)
         
-        root = ET.Element("root")  # Создаем корневой элемент
+        root = ET.Element("root")
         for item in data:
-            entry = ET.SubElement(root, "entry")  # Создаем элемент для каждого объекта
+            entry = ET.SubElement(root, "entry")
             for key, value in item.items():
                 element = ET.SubElement(entry, key)
-                element.text = str(value)  # Преобразуем значение в строку
+                element.text = str(value)
 
         tree = ET.ElementTree(root)
         tree.write(output_filepath, encoding='utf-8', xml_declaration=True)
