@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment variables
+.env
+.cfg
+
+# macOS system files
+.DS_Store
+
+# VSCode specific
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.pid
+
+# PostgreSQL database dumps
+*.sql
+*.dump
+
+# Docker-related files
+docker-compose.override.yml
+*.env
+
+# Python package dependencies
+*.egg-info/
+.eggs/
+pip-log.txt
+
+# Generated XML and JSON files (exported data)
+*.xml
+*.json
+
+# PyCharm specific
+.idea/
+
+# Ignore any database data directories or generated files
+results/
+data/
