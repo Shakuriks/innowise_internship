@@ -12,6 +12,7 @@ venv/
 
 # Environment variables
 .env
+.cfg
 
 # macOS system files
 .DS_Store
