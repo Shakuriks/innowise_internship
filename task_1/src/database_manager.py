@@ -91,17 +91,14 @@ class DatabaseManager:
     def with_explain_analyze(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            # Получаем SQL-запрос и параметры из исходной функции
             query, params = func(self, *args, **kwargs)
 
             try:
-                # Выполняем EXPLAIN ANALYZE
                 explain_query = f"EXPLAIN ANALYZE {query}"
                 self.cursor.execute(explain_query, params)
                 explain_results = self.cursor.fetchall()
                 self.print_explain_results(explain_results)
                 
-                # Выполняем основной запрос
                 self.cursor.execute(query, params)
                 return self.cursor.fetchall()
 
