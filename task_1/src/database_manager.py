@@ -1,4 +1,5 @@
 import psycopg2
+from functools import wraps
 
 class DatabaseManager:
     def __init__(self):
@@ -66,7 +67,6 @@ class DatabaseManager:
             print(f"Ошибка при добавлении комнаты: {e}")
             self.conn.rollback()
 
-
     def insert_student(self, student_data):
         insert_student_query = """
         INSERT INTO students (id, name, sex, birthday, room_id)
@@ -87,8 +87,30 @@ class DatabaseManager:
         except Exception as e:
             print(f"Ошибка при добавлении студента: {e}")
             self.conn.rollback()
-                
             
+    def with_explain_analyze(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # Получаем SQL-запрос и параметры из исходной функции
+            query, params = func(self, *args, **kwargs)
+
+            try:
+                # Выполняем EXPLAIN ANALYZE
+                explain_query = f"EXPLAIN ANALYZE {query}"
+                self.cursor.execute(explain_query, params)
+                explain_results = self.cursor.fetchall()
+                self.print_explain_results(explain_results)
+                
+                # Выполняем основной запрос
+                self.cursor.execute(query, params)
+                return self.cursor.fetchall()
+
+            except Exception as e:
+                print(f"Ошибка при выполнении запроса: {e}")
+                return None
+        return wrapper
+            
+    @with_explain_analyze
     def get_rooms_with_student_count(self):
         query = """
         SELECT r.id AS room_id, r.name AS room_name, COUNT(s.id) AS student_count
@@ -97,30 +119,9 @@ class DatabaseManager:
         GROUP BY r.id, r.name
         ORDER BY r.id;
         """
-        try:
-            explain_query = f"EXPLAIN ANALYZE {query}"
-            self.cursor.execute(explain_query)
-            explain_results = self.cursor.fetchall()
-            self.print_explain_results(explain_results)
-            
-            self.cursor.execute(query)
-            results = self.cursor.fetchall()
-            
-            rooms_with_counts = []
-            for row in results:
-                room_data = {
-                    'room_id': row[0],
-                    'room_name': row[1],
-                    'student_count': row[2]
-                }
-                rooms_with_counts.append(room_data)
+        return query, None
 
-            return rooms_with_counts
-
-        except Exception as e:
-            print(f"Ошибка при получении данных о комнатах: {e}")
-            return None
-        
+    @with_explain_analyze
     def get_rooms_with_lowest_average_age(self, limit=5):
         query = """
         SELECT r.id AS room_id, r.name AS room_name
@@ -130,30 +131,9 @@ class DatabaseManager:
         ORDER BY AVG(EXTRACT(YEAR FROM AGE(s.birthday))) ASC
         LIMIT %s;
         """
-        try:
-            explain_query = f"EXPLAIN ANALYZE {query}"
-            self.cursor.execute(explain_query, (limit,))
-            explain_results = self.cursor.fetchall()
-            self.print_explain_results(explain_results)
-            
-            self.cursor.execute(query, (limit,))
-            results = self.cursor.fetchall()
-            
-            rooms_with_average_age = []
-            for row in results:
-                room_data = {
-                    'room_id': row[0],
-                    'room_name': row[1]
-                }
-                rooms_with_average_age.append(room_data)
+        return query, (limit,)
 
-            return rooms_with_average_age
-
-        except Exception as e:
-            print(f"Ошибка при получении данных о комнатах с самым маленьким средним возрастом студентов: {e}")
-            return None
-
-
+    @with_explain_analyze
     def get_rooms_with_largest_age_difference(self, limit=5):
         query = """
         SELECT r.id AS room_id, r.name AS room_name
@@ -163,30 +143,9 @@ class DatabaseManager:
         ORDER BY MAX(s.birthday) - MIN(s.birthday) DESC
         LIMIT %s;
         """
-        try:
-            explain_query = f"EXPLAIN ANALYZE {query}"
-            self.cursor.execute(explain_query, (limit,))
-            explain_results = self.cursor.fetchall()
-            self.print_explain_results(explain_results)
-            
-            self.cursor.execute(query, (limit,))
-            results = self.cursor.fetchall()
+        return query, (limit,)
 
-            rooms = []
-            for row in results:
-                room_data = {
-                    'room_id': row[0],
-                    'room_name': row[1]
-                }
-                rooms.append(room_data)
-
-            return rooms
-
-        except Exception as e:
-            print(f"Ошибка при получении данных о комнатах с самой большой разницей в возрасте студентов: {e}")
-            return None
-
-    
+    @with_explain_analyze
     def get_rooms_with_mixed_gender_students(self):
         query = """
         SELECT r.id AS room_id, r.name AS room_name
@@ -195,28 +154,7 @@ class DatabaseManager:
         GROUP BY r.id, r.name
         HAVING COUNT(DISTINCT s.sex) > 1;
         """
-        try:
-            explain_query = f"EXPLAIN ANALYZE {query}"
-            self.cursor.execute(explain_query)
-            explain_results = self.cursor.fetchall()
-            self.print_explain_results(explain_results)
-            
-            self.cursor.execute(query)
-            results = self.cursor.fetchall()
-            
-            rooms_with_mixed_genders = []
-            for row in results:
-                room_data = {
-                    'room_id': row[0],
-                    'room_name': row[1]
-                }
-                rooms_with_mixed_genders.append(room_data)
-
-            return rooms_with_mixed_genders
-
-        except Exception as e:
-            print(f"Ошибка при получении данных о комнатах с разнополыми студентами: {e}")
-            return None
+        return query, None
 
         
     def print_explain_results(self, explain_results):

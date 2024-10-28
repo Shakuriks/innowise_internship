@@ -11,23 +11,21 @@ class DataHandler:
                 yield item
 
     @staticmethod
-    def save_as_json(data, output_filepath):
+    def _prepare_output_filepath(filename):
         output_directory = 'results'
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
-            
-        output_filepath = os.path.join(output_directory, output_filepath)
-        
+        return os.path.join(output_directory, filename)
+
+    @staticmethod
+    def save_as_json(data, output_filepath):
+        output_filepath = DataHandler._prepare_output_filepath(output_filepath)
         with open(output_filepath, 'w') as file:
             json.dump(data, file, indent=4)
 
     @staticmethod
     def save_as_xml(data, output_filepath):
-        output_directory = 'results'
-        if not os.path.exists(output_directory):
-            os.makedirs(output_directory)
-            
-        output_filepath = os.path.join(output_directory, output_filepath)
+        output_filepath = DataHandler._prepare_output_filepath(output_filepath)
         
         root = ET.Element("root")
         for item in data:
