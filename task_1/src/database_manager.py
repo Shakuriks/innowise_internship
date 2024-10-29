@@ -1,4 +1,5 @@
 import psycopg2
+from psycopg2.extras import DictCursor
 from functools import wraps
 
 class DatabaseManager:
@@ -6,7 +7,7 @@ class DatabaseManager:
         try:
             db_url = "postgresql://postgres:postgres@localhost:5435/db_innowise_task_1"
             self.conn = psycopg2.connect(db_url)
-            self.cursor = self.conn.cursor()
+            self.cursor = self.conn.cursor(cursor_factory=DictCursor) 
             self.create_tables()
         except Exception as e:
             print(f"Ошибка подключения к базе данных: {e}")
@@ -88,25 +89,27 @@ class DatabaseManager:
             print(f"Ошибка при добавлении студента: {e}")
             self.conn.rollback()
             
+    @staticmethod
     def with_explain_analyze(func):
         @wraps(func)
-        def wrapper(self, *args, **kwargs):
+        def wrapper(self, *args, analyze=False, **kwargs):
             query, params = func(self, *args, **kwargs)
 
             try:
-                explain_query = f"EXPLAIN ANALYZE {query}"
-                self.cursor.execute(explain_query, params)
-                explain_results = self.cursor.fetchall()
-                self.print_explain_results(explain_results)
-                
+                if analyze:
+                    explain_query = f"EXPLAIN ANALYZE {query}"
+                    self.cursor.execute(explain_query, params)
+                    explain_results = self.cursor.fetchall()
+                    self.print_explain_results(explain_results)
+
                 self.cursor.execute(query, params)
-                return self.cursor.fetchall()
+                return [dict(row) for row in self.cursor.fetchall()]
 
             except Exception as e:
                 print(f"Ошибка при выполнении запроса: {e}")
                 return None
         return wrapper
-            
+                
     @with_explain_analyze
     def get_rooms_with_student_count(self):
         query = """

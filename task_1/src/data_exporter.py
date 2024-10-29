@@ -12,31 +12,31 @@ class DataExporter:
     
     @staticmethod
     def export_data_decorator(method):
-        def wrapper(db_manager, file_format='json'):
-            data = method(db_manager)
+        def wrapper(db_manager, file_format='json', analyze = False):
+            data = method(db_manager, analyze)
             filename = method.__name__.replace("export_", "")
             DataExporter._save_data(data, filename, file_format)
         return wrapper
     
     @staticmethod
     @export_data_decorator
-    def export_rooms_with_student_count(db_manager):
-        return db_manager.get_rooms_with_student_count()
+    def export_rooms_with_student_count(db_manager, analyze):
+        return db_manager.get_rooms_with_student_count(analyze=analyze)
 
     @staticmethod
     @export_data_decorator
-    def export_lowest_average_age_rooms(db_manager):
-        return db_manager.get_rooms_with_lowest_average_age()
+    def export_lowest_average_age_rooms(db_manager, analyze):
+        return db_manager.get_rooms_with_lowest_average_age(analyze=analyze)
 
     @staticmethod
     @export_data_decorator
-    def export_rooms_with_largest_age_difference(db_manager):
-        return db_manager.get_rooms_with_largest_age_difference()
+    def export_rooms_with_largest_age_difference(db_manager, analyze):
+        return db_manager.get_rooms_with_largest_age_difference(analyze=analyze)
 
     @staticmethod
     @export_data_decorator
-    def export_rooms_with_mixed_gender_students(db_manager):
-        return db_manager.get_rooms_with_mixed_gender_students()
+    def export_rooms_with_mixed_gender_students(db_manager, analyze):
+        return db_manager.get_rooms_with_mixed_gender_students(analyze=analyze)
 
     @staticmethod
     def _save_data(data, filename, file_format):
