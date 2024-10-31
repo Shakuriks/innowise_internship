@@ -8,12 +8,13 @@ def main():
     parser.add_argument('--rooms', required=True, help="Путь к файлу комнат (JSON).")
     parser.add_argument('--format', choices=['json', 'xml'], default='json', help="Выходной формат: json или xml.")
     parser.add_argument('--analyze', action='store_true', help="Включить выполнение EXPLAIN ANALYZE для запросов.")
+    parser.add_argument('--batch_size', type=int, default=100, help="Количество записей для записи в БД за раз.")
 
     args = parser.parse_args()
 
     db_manager = DatabaseManager()
 
-    DataExporter.populate_database(db_manager, args.rooms, args.students)
+    DataExporter.populate_database(db_manager, args.rooms, args.students, batch_size=args.batch_size)
 
     DataExporter.export_rooms_with_student_count(db_manager, args.format, analyze=args.analyze)
     DataExporter.export_lowest_average_age_rooms(db_manager, args.format, analyze=args.analyze)
