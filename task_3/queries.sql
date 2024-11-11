@@ -62,21 +62,72 @@ ORDER BY inactive_customers_count DESC;
 
 --task 7
 
+-- (
+--     SELECT 
+--         ca.name AS category_name,
+--         SUM(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))) AS category_summary_rental_time
+--     FROM category ca
+--     INNER JOIN film_category fc ON ca.category_id = fc.category_id
+--     INNER JOIN inventory i ON fc.film_id = i.film_id
+--     INNER JOIN rental r ON i.inventory_id = r.inventory_id
+--     INNER JOIN customer cu ON r.customer_id = cu.customer_id
+--     INNER JOIN address a ON cu.address_id = a.address_id
+--     INNER JOIN city c ON a.city_id = c.city_id
+--     WHERE r.rental_date IS NOT NULL 
+--       AND r.return_date IS NOT NULL
+--       AND c.city LIKE 'A%'
+--     GROUP BY ca.category_id, ca.name
+--     ORDER BY category_summary_rental_time DESC
+--     LIMIT 1
+-- )
+
+-- UNION ALL
+
+-- (
+--     SELECT 
+--         ca.name AS category_name,
+--         SUM(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))) AS category_summary_rental_time
+--     FROM category ca
+--     INNER JOIN film_category fc ON ca.category_id = fc.category_id
+--     INNER JOIN inventory i ON fc.film_id = i.film_id
+--     INNER JOIN rental r ON i.inventory_id = r.inventory_id
+--     INNER JOIN customer cu ON r.customer_id = cu.customer_id
+--     INNER JOIN address a ON cu.address_id = a.address_id
+--     INNER JOIN city c ON a.city_id = c.city_id
+--     WHERE r.rental_date IS NOT NULL 
+--       AND r.return_date IS NOT NULL
+--       AND c.city LIKE '%-%'
+--     GROUP BY ca.category_id, ca.name
+--     ORDER BY category_summary_rental_time DESC
+--     LIMIT 1
+-- );
+
+CREATE OR REPLACE VIEW category_summary_rental_time_filtered AS
+SELECT 
+    ca.name AS category_name,
+    CASE
+        WHEN c.city LIKE 'A%' THEN 'A%'
+        WHEN c.city LIKE '%-%' THEN '%-%'
+    END AS city_pattern,
+    SUM(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))) AS category_summary_rental_time
+FROM category ca
+INNER JOIN film_category fc ON ca.category_id = fc.category_id
+INNER JOIN inventory i ON fc.film_id = i.film_id
+INNER JOIN rental r ON i.inventory_id = r.inventory_id
+INNER JOIN customer cu ON r.customer_id = cu.customer_id
+INNER JOIN address a ON cu.address_id = a.address_id
+INNER JOIN city c ON a.city_id = c.city_id
+WHERE r.rental_date IS NOT NULL 
+  AND r.return_date IS NOT NULL
+  AND (c.city LIKE 'A%' OR c.city LIKE '%-%')
+GROUP BY ca.category_id, ca.name, city_pattern;
+
 (
     SELECT 
-        ca.name AS category_name,
-        SUM(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))) AS category_summary_rental_time
-    FROM category ca
-    INNER JOIN film_category fc ON ca.category_id = fc.category_id
-    INNER JOIN inventory i ON fc.film_id = i.film_id
-    INNER JOIN rental r ON i.inventory_id = r.inventory_id
-    INNER JOIN customer cu ON r.customer_id = cu.customer_id
-    INNER JOIN address a ON cu.address_id = a.address_id
-    INNER JOIN city c ON a.city_id = c.city_id
-    WHERE r.rental_date IS NOT NULL 
-      AND r.return_date IS NOT NULL
-      AND c.city LIKE 'A%'
-    GROUP BY ca.category_id, ca.name
+        category_name,
+        category_summary_rental_time
+    FROM category_summary_rental_time_filtered
+    WHERE city_pattern = 'A%'
     ORDER BY category_summary_rental_time DESC
     LIMIT 1
 )
@@ -85,19 +136,12 @@ UNION ALL
 
 (
     SELECT 
-        ca.name AS category_name,
-        SUM(EXTRACT(EPOCH FROM (r.return_date - r.rental_date))) AS category_summary_rental_time
-    FROM category ca
-    INNER JOIN film_category fc ON ca.category_id = fc.category_id
-    INNER JOIN inventory i ON fc.film_id = i.film_id
-    INNER JOIN rental r ON i.inventory_id = r.inventory_id
-    INNER JOIN customer cu ON r.customer_id = cu.customer_id
-    INNER JOIN address a ON cu.address_id = a.address_id
-    INNER JOIN city c ON a.city_id = c.city_id
-    WHERE r.rental_date IS NOT NULL 
-      AND r.return_date IS NOT NULL
-      AND c.city LIKE '%-%'
-    GROUP BY ca.category_id, ca.name
+        category_name,
+        category_summary_rental_time
+    FROM category_summary_rental_time_filtered
+    WHERE city_pattern = '%-%'
     ORDER BY category_summary_rental_time DESC
     LIMIT 1
 );
+
+
